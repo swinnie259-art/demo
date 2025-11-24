@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Y2K 像素 MP3 播放器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 引入像素字体 */
+        @font-face {
+            font-family: 'PixelEmulator';
+            src: url('https://fonts.gstatic.com/s/pressstart2p/v15/R70mJzJ2w-d9yIeF_V9Jg7V2BfSgI3Q.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        /* 核心样式和像素化效果 */
+        :root {
+            --color-blue-light: #B3E5FC; /* 天蓝色 */
+            --color-blue-dark: #0288D1;
+            --color-green-screen: #C8E6C9; /* 浅绿色屏幕 */
+            --color-green-dark: #388E3C;
+            --color-y2k-pink: #FF4081;
+            --color-button: #FFCC80; /* 醒目橙色 */
+            --pixel-border: 6px solid #000000;
+        }
+
+        body {
+            font-family: 'PixelEmulator', monospace;
+            background-color: #E1F5FE; /* 极浅蓝色背景 */
+            color: #000000;
+            display: flex;
+            flex-direction: column; /* 允许内容上下流动 */
+            align-items: center; /* 保持内容水平居中 */
+            padding: 20px;
+            overflow-y: auto; /* 允许垂直滚动 */
+            min-width: 360px; /* 确保在小屏幕上有最小宽度 */
+        }
+
+        /* 顶部介绍区域 */
+        .intro-section {
+            width: 340px;
+            max-width: 90vw;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 4px solid #000;
+            padding: 15px;
+            background-color: #ffffff; 
+            box-shadow: 6px 6px 0px var(--color-y2k-pink); /* Y2K 粉色阴影 */
+            border-radius: 8px;
+        }
+        
+        .intro-title {
+            font-size: 16px; 
+            margin-bottom: 10px; 
+            color: var(--color-blue-dark);
+            text-shadow: 1px 1px 0 #fff;
+        }
+        
+        .intro-text {
+            font-size: 10px; 
+            line-height: 1.5; 
+            color: #333;
+        }
+
+        /* 成员介绍区样式 */
+        .member-section {
+            width: 340px;
+            max-width: 90vw;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .member-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .member-button {
+            width: 100%;
+            aspect-ratio: 1 / 1; /* 使按钮成为正方形，以便制作圆形 */
+            border-radius: 9999px; /* 圆形 */
+            background-color: var(--color-y2k-pink); 
+            color: #ffffff;
+            border: 4px solid #000000;
+            font-family: 'PixelEmulator', monospace;
+            font-size: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 4px 4px 0px var(--color-blue-dark);
+            transition: all 0.05s linear;
+            text-shadow: 1px 1px 0 #000;
+            line-height: 1.2;
+            padding: 5px;
+        }
+
+        .member-button:active {
+            box-shadow: 0px 0px 0px #000000;
+            transform: translate(4px, 4px);
+            background-color: #FF80AB;
+        }
+
+        /* 成员简介显示框 */
+        #profileDisplay {
+            border: 4px solid var(--color-green-dark); /* 使用绿色主题 */
+            box-shadow: 6px 6px 0px var(--color-green-dark);
+            padding: 15px;
+            background-color: #E8F5E9; /* 浅绿色背景 */
+            display: none; /* 默认隐藏 */
+            text-align: left;
+            min-height: 100px;
+            width: 100%;
+            border-radius: 8px;
+        }
+        .profile-title {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--color-y2k-pink);
+        }
+        .profile-info {
+            font-size: 8px;
+            color: #000;
+            line-height: 1.6;
+        }
+
+        /* MP3 播放器容器 */
+        .mp3-player {
+            width: 340px;
+            background-color: var(--color-blue-light);
+            border: var(--pixel-border);
+            border-radius: 12px;
+            box-shadow: 8px 8px 0px 0px #000000, 
+                        -4px -4px 0px 0px #ffffff,
+                        inset 4px 4px 0px var(--color-blue-dark),
+                        inset -4px -4px 0px #ffffff;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+            max-width: 90vw;
+        }
+
+        /* Y2K 装饰元素 */
+        .y2k-deco {
+            position: absolute;
+            font-size: 28px;
+            text-shadow: 2px 2px 0 #000000;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.8;
+            line-height: 1;
+        }
+        .star { top: 8px; left: 10px; color: #FFEB3B; transform: rotate(10deg); } /* 黄色星星 */
+        .wing { bottom: 8px; right: 10px; font-size: 34px; color: var(--color-y2k-pink); } /* 粉色翅膀 */
+        .palm { top: 30px; right: 15px; font-size: 24px; color: var(--color-green-dark); } /* 绿色椰树 */
+        
+        /* 屏幕区域 */
+        .screen {
+            background-color: var(--color-green-screen);
+            border: 4px solid #000000;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+            height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 2px 2px 0px var(--color-green-dark), inset -2px -2px 0px #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 输入框容器 */
+        .input-area {
+            width: 95%;
+            padding: 5px;
+        }
+
+        /* 单个输入框 */
+        .song-input {
+            width: 100%;
+            padding: 6px;
+            margin: 5px 0;
+            background-color: #E0E0E0;
+            border: 2px solid #000000;
+            box-sizing: border-box;
+            font-family: 'PixelEmulator', monospace;
+            font-size: 8px; 
+            color: var(--color-blue-dark);
+            outline: none;
+            text-transform: lowercase;
+            line-height: 1.2;
+            position: relative;
+        }
+
+        /* 老式光标效果 */
+        .input-wrapper {
+            position: relative;
+            margin: 5px 0;
+        }
+        .cursor {
+            display: none;
+            width: 4px;
+            height: 8px;
+            background-color: #000000;
+            animation: blink 0.8s step-end infinite;
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .song-input:focus + .cursor {
+            display: block;
+        }
+
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* 播放动画区域 */
+        .playback-animation {
+            text-align: center;
+            color: var(--color-blue-dark);
+            display: none; 
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+        }
+        /* Y2K 唱片机/CD 元素 */
+        .rotating-cd {
+            font-size: 80px;
+            line-height: 1;
+            margin-bottom: 10px;
+            animation: spin 2s linear infinite;
+        }
+        /* 播放信息文字 */
+        .playing-info {
+            font-size: 9px;
+            color: var(--color-y2k-pink);
+            padding: 5px 10px;
+            border: 2px dashed var(--color-y2k-pink);
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 控制按钮区域 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            gap: 10px; /* 增加按钮间距 */
+        }
+
+        /* 像素风按钮 */
+        .pixel-button {
+            padding: 12px 18px; /* 调整宽度以适应3个按钮 */
+            background-color: var(--color-button); 
+            color: #000000;
+            border: 4px solid #000000;
+            border-radius: 4px;
+            font-family: 'PixelEmulator', monospace;
+            font-size: 10px; /* 调整字体大小 */
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000000;
+            transition: all 0.05s linear;
+            user-select: none; /* 防止文本被选中 */
+            white-space: nowrap; /* 防止按钮文字换行 */
+        }
+        
+        /* 特定按钮样式覆盖 */
+        #backButton {
+            background-color: #4dd0e1; /* 浅蓝色，与主色调区分 */
+        }
+        
+        /* 播放/下一首按钮样式 */
+        #playButton, #nextButton {
+            font-size: 14px; /* 播放和下一首按钮图标保持大字体 */
+        }
+
+        /* 按钮按下效果 */
+        .pixel-button:active {
+            box-shadow: 0px 0px 0px #000000;
+            transform: translate(4px, 4px);
+        }
+
+        .pixel-button:disabled {
+            background-color: #90a4ae;
+            cursor: not-allowed;
+            box-shadow: 4px 4px 0px #607d8b;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部韩语介绍，Y2K 像素风格 -->
+    <div class="intro-section">
+        <h1 class="intro-title">NCT WISH: WISH for Our WISH</h1>
+        <p class="intro-text">
+            ✨ 네오 컬처 테크놀로지, 엔시티 위시! 저희의 음악으로 당신의 소원이 현실이 되기를 바라요. 
+            청량하고 희망찬 NCT WISH의 Y2K 감성을 지금 바로 아래 MP3 플레이어에서 만나보세요! 
+            💫 🚀
+        </p>
+    </div>
+
+    <!-- 成员介绍区域 -->
+    <div class="member-section">
+        <h2 class="intro-title text-xl mb-4 text-center">成员档案 (MEMBER PROFILE)</h2>
+        
+        <div class="member-grid">
+            <button class="member-button" data-member="sion">SION<br>(시온)</button>
+            <button class="member-button" data-member="riku">RIKU<br>(리쿠)</button>
+            <button class="member-button" data-member="yushi">YUSHI<br>(유우시)</button>
+            <button class="member-button" data-member="jaehee">JAEHEE<br>(재희)</button>
+            <button class="member-button" data-member="ryo">RYO<br>(료)</button>
+            <button class="member-button" data-member="sakuya">SAKUYA<br>(사쿠야)</button>
+        </div>
+
+        <div class="intro-section" id="profileDisplay">
+            <p class="profile-info text-center">点击任一成员按钮查看简介 ✨</p>
+        </div>
+    </div>
+    
+    <!-- MP3 播放器主体 -->
+    <div class="mp3-player">
+        <!-- Y2K 装饰 -->
+        <div class="y2k-deco star">★</div>
+        <div class="y2k-deco wing">ʚïɞ</div>
+        <div class="y2k-deco palm">🌴</div>
+        
+        <!-- 屏幕区域 -->
+        <div class="screen">
+            <div class="input-area" id="inputArea">
+                <div class="input-wrapper">
+                    <input type="text" id="song1" class="song-input" placeholder="输入 nctwish 的 color" value="nctwish的color" data-url="https://raw.githubusercontent.com/swinnie259-art/demo/main/NCT-WISH---COLOR-Bazeafrika.com.mp3">
+                    <span class="cursor"></span>
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="song2" class="song-input" placeholder="输入 nctwish 的 surf" value="nctwish의surf" data-url="https://raw.githubusercontent.com/swinnie259-art/demo/main/NCT-WISH---Surf-Bazeafrika.com.mp3">
+                    <span class="cursor"></span>
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="song3" class="song-input" placeholder="输入 nctwish 的 wichu" value="nctwish의wichu" data-url="https://raw.githubusercontent.com/swinnie259-art/demo/main/NCT-WISH---WICHU-Bazeafrika.com.mp3">
+                    <span class="cursor"></span>
+                </div>
+            </div>
+            
+            <!-- 播放动画 -->
+            <div class="playback-animation" id="playbackAnimation">
+                <span class="rotating-cd">📀</span> <!-- Y2K CD/光盘图标 -->
+                <div class="playing-info" id="playingInfo"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="pixel-button" id="backButton">主屏幕</button>
+            <button class="pixel-button" id="playButton">▶ 播放</button>
+            <button class="pixel-button" id="nextButton">▶▶ 下一首</button>
+        </div>
+        
+        <!-- 音频播放器 (隐藏) -->
+        <audio id="audioPlayer"></audio>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const playButton = document.getElementById('playButton');
+            const nextButton = document.getElementById('nextButton');
+            const backButton = document.getElementById('backButton'); 
+            const audioPlayer = document.getElementById('audioPlayer');
+            const inputArea = document.getElementById('inputArea');
+            const playbackAnimation = document.getElementById('playbackAnimation');
+            const playingInfo = document.getElementById('playingInfo');
+            const songInputs = [
+                document.getElementById('song1'),
+                document.getElementById('song2'),
+                document.getElementById('song3')
+            ];
+            
+            // --- 成员数据 (已更新：Sion 描述已修改，去除定位) ---
+            const members = {
+                sion: {
+                    korean: "시온 (SION)",
+                    birthday: "2002.05.11",
+                    info: "NCT WISH의 맏형이자 리더. 팀을 든든하게 이끌어가는 멤버. (团队中的大哥，带领着团队的成员)", 
+                    emoji: "🌷" // 郁金香
+                },
+                riku: {
+                    korean: "리쿠 (RIKU)",
+                    birthday: "2003.06.28",
+                    info: "넘치는 에너지와 밝은 미소가 트레이드마크인 멤버. 무대 위에서 언제나 빛나요. (充满活力和灿烂笑容的成员。在舞台上总是闪耀着光芒。)",
+                    emoji: "🐿️" // 松鼠
+                },
+                yushi: {
+                    korean: "유우시 (YUSHI)",
+                    birthday: "2004.04.05",
+                    info: "시크한 눈빛과 부드러운 카리스마가 돋보이는 멤버. 매 순간 섬세한 퍼포먼스를 선보입니다. (眼神酷炫，温柔魅力十足的成员。每个瞬间都展现出细腻的表演。)",
+                    emoji: "⭐" // 星星
+                },
+                jaehee: {
+                    korean: "재희 (JAEHEE)",
+                    birthday: "2005.06.21",
+                    info: "팀의 분위기 메이커. 활기차고 밝은 매력으로 팬들에게 기쁨을 선사합니다. (团队的氛围制造者。以活泼开朗的魅力带给粉丝快乐。)",
+                    emoji: "🌳" // 树
+                },
+                ryo: {
+                    korean: "료 (RYO)",
+                    birthday: "2007.08.04",
+                    info: "귀여운 비주얼과 반전되는 퍼포먼스 실력을 가진 멤버. 무한한 성장 가능성을 보여주고 있어요. (拥有可爱外貌和反转舞台实力的成员。展现出无限的成长可能性。)",
+                    emoji: "🦦" // 水獭
+                },
+                sakuya: {
+                    korean: "사쿠야 (SAKUYA)",
+                    birthday: "2007.11.18",
+                    info: "팀의 사랑스러운 막내. 톡톡 튀는 개성과 매력으로 형들의 사랑을 독차지합니다. (团队里可爱的忙内。以独特的个性和魅力独占哥哥们的宠爱。)",
+                    emoji: "🍞" // 面包
+                }
+            };
+
+            const memberButtons = document.querySelectorAll('.member-button');
+            const profileDisplay = document.getElementById('profileDisplay');
+
+            // --- 成员信息展示函数 ---
+            function displayProfile(memberKey) {
+                const member = members[memberKey];
+                if (!member) return;
+
+                profileDisplay.style.display = 'block';
+                profileDisplay.innerHTML = `
+                    <p class="profile-title">⭐ ${member.korean}</p>
+                    <p class="profile-info mb-2">🎂 생일 (Birthday): ${member.birthday}</p>
+                    
+                    <!-- 代表性 Emoji 区域 (使用成员专属 Emoji) -->
+                    <div style="margin-top: 15px; border-top: 2px dashed ${getComputedStyle(document.documentElement).getPropertyValue('--color-y2k-pink')}; padding-top: 15px; margin-bottom: 15px;">
+                        <p class="profile-title text-center text-sm" style="font-size: 10px; color: var(--color-green-dark);">✨ 代表 Emoji (REPRESENTATIVE EMOJI) ✨</p>
+                        <!-- 使用成员专属 Emoji，放大显示 -->
+                        <div class="profile-info text-center" style="color: var(--color-blue-dark); padding: 10px 0; border: 3px solid var(--color-blue-dark); background-color: #ffffff; line-height: 1.2; box-shadow: 4px 4px 0 var(--color-y2k-pink);">
+                            <span style="font-size: 64px; line-height: 1;">${member.emoji}</span> 
+                        </div>
+                        <p class="profile-info text-center mt-2" style="font-size: 7px; color: var(--color-green-dark);">
+                            (${member.korean.split('(')[0].trim()} 的专属符号)
+                        </p>
+                    </div>
+                    
+                    <p class="profile-info mt-3">✨ 소개 (Intro): ${member.info} ✨</p>
+                `;
+            }
+
+            memberButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const memberKey = this.dataset.member;
+                    displayProfile(memberKey);
+                });
+            });
+            // --- 成员数据和展示逻辑结束 ---
+
+
+            let currentSongIndex = 0;
+            let isPlaying = false;
+
+            // 获取更新后的歌曲列表 (依赖于输入框的 data-url)
+            function getUpdatedSongList() {
+                return songInputs.map(input => ({
+                    name: input.value,
+                    url: input.dataset.url 
+                }));
+            }
+
+            // 播放函数
+            function playSong(startFromCurrent = false) {
+                const list = getUpdatedSongList();
+                // 检查播放列表是否为空
+                if (list.length === 0) {
+                    playingInfo.textContent = '错误：歌曲列表为空。';
+                    return;
+                }
+
+                // 循环逻辑: 播放完最后一首后回到第一首
+                if (!startFromCurrent) {
+                    if (currentSongIndex >= list.length) {
+                        currentSongIndex = 0;
+                    } else if (currentSongIndex < 0) {
+                        currentSongIndex = list.length - 1;
+                    }
+                }
+
+
+                const song = list[currentSongIndex];
+                
+                // 设置音频源并尝试播放
+                audioPlayer.src = song.url;
+                audioPlayer.load(); // 强制加载新源
+                
+                audioPlayer.play()
+                    .then(() => {
+                        // 播放成功
+                        isPlaying = true;
+                        playButton.textContent = '⏸ 暂停';
+                        inputArea.style.display = 'none';
+                        playbackAnimation.style.display = 'flex';
+                        playingInfo.textContent = `播放中: ${song.name.toUpperCase()}`;
+                    })
+                    .catch(error => {
+                        // 播放失败 (如用户未交互、URL错误等)
+                        console.error("音频播放失败:", error);
+                        playingInfo.textContent = `加载失败: ${song.name.toUpperCase()}`;
+                        
+                        // 播放失败后，如果是在自动连续播放或按 Next，则尝试下一首
+                        if (isPlaying || !startFromCurrent) {
+                            currentSongIndex++;
+                            setTimeout(playSong, 1000); // 延迟1秒尝试下一首
+                        } else {
+                            // 如果是用户点击 Play 失败，则停留在当前状态
+                            playButton.textContent = '▶ 播放';
+                            isPlaying = false;
+                        }
+                    });
+            }
+            
+            // 返回主屏幕函数
+            function returnToHomeScreen() {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0; // 重置时间
+                isPlaying = false;
+                
+                playButton.textContent = '▶ 播放';
+                currentSongIndex = 0; // 重置索引
+                
+                // 切换屏幕显示
+                inputArea.style.display = 'block';
+                playbackAnimation.style.display = 'none';
+                playingInfo.textContent = '欢迎回来！';
+            }
+
+            // 播放按钮点击事件
+            playButton.addEventListener('click', () => {
+                if (!isPlaying) {
+                    // 暂停/停止状态 -> 播放
+                    if (audioPlayer.paused && audioPlayer.src && audioPlayer.currentTime > 0) {
+                        // 继续播放
+                        audioPlayer.play()
+                            .then(() => {
+                                isPlaying = true;
+                                playButton.textContent = '⏸ 暂停';
+                                inputArea.style.display = 'none';
+                                playbackAnimation.style.display = 'flex';
+                                playingInfo.textContent = `播放中: ${getUpdatedSongList()[currentSongIndex].name.toUpperCase()}`;
+                            })
+                            .catch(error => {
+                                console.error("恢复播放失败:", error);
+                                // 恢复失败，从当前索引重新开始播放
+                                playSong(true); 
+                            });
+                    } else {
+                        // 从头开始播放列表
+                        currentSongIndex = 0;
+                        playSong();
+                    }
+                } else {
+                    // 播放状态 -> 暂停
+                    audioPlayer.pause();
+                    playButton.textContent = '▶ 播放';
+                    isPlaying = false;
+                }
+            });
+
+            // 下一首按钮点击事件
+            nextButton.addEventListener('click', () => {
+                currentSongIndex++; // 索引移至下一首
+                audioPlayer.pause(); // 暂停当前播放
+                playSong(); // 播放下一首
+            });
+
+            // 返回主屏幕按钮点击事件
+            backButton.addEventListener('click', returnToHomeScreen);
+
+
+            // 监听音频结束事件，自动播放下一首
+            audioPlayer.addEventListener('ended', () => {
+                currentSongIndex++;
+                playSong();
+            });
+
+            // 监听输入框，确保光标效果
+            songInputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    document.querySelectorAll('.cursor').forEach(c => c.style.display = 'none');
+                    const cursor = this.nextElementSibling;
+                    if (cursor && cursor.classList.contains('cursor')) {
+                        cursor.style.display = 'block';
+                    }
+                });
+                input.addEventListener('blur', function() {
+                    const cursor = this.nextElementSibling;
+                    if (cursor && cursor.classList.contains('cursor')) {
+                        cursor.style.display = 'none';
+                    }
+                });
+            });
+            
+            // 初始化时确保显示输入界面
+            returnToHomeScreen();
+        });
+    </script>
+</body>
+</html>
