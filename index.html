@@ -128,6 +128,27 @@
             line-height: 1.6;
         }
 
+        /* 新增的 MV 播放器容器样式 (保持外部 MV 独立) */
+        .external-mv-player {
+            width: 340px;
+            max-width: 90vw;
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #ffe0b2; /* 柔和橙色背景 */
+            border: 4px solid #000000;
+            border-radius: 8px;
+            box-shadow: 6px 6px 0px var(--color-blue-dark); /* 深蓝色阴影 */
+            text-align: center;
+        }
+
+        #externalMvPlayer {
+            width: 100%;
+            max-height: 250px; /* 限制最大高度 */
+            border: 3px solid var(--color-y2k-pink);
+            box-shadow: 4px 4px 0 #000000;
+            border-radius: 4px;
+        }
+
         /* MP3 播放器容器 */
         .mp3-player {
             width: 340px;
@@ -174,7 +195,7 @@
             position: relative;
             overflow: hidden;
         }
-
+        
         /* 输入框容器 */
         .input-area {
             width: 95%;
@@ -330,6 +351,18 @@
         </div>
     </div>
     
+    <!-- MV 播放器主体 (独立于 MP3 播放器，作为外部元素保留) -->
+    <div class="external-mv-player">
+        <h2 class="intro-title text-lg mb-3 text-center" style="color: var(--color-green-dark);">
+            🎵 'COLOR' MV 专用播放器 🎵
+        </h2>
+        <!-- 视频元素，使用 controls 属性进行标准控制 -->
+        <video controls id="externalMvPlayer" poster="https://placehold.co/640x360/0288D1/ffffff?text=NCT+WISH+COLOR+MV">
+            <source src="https://raw.githubusercontent.com/swinnie259-art/demo/main/NCT%20WISH%20%E1%84%8B%E1%85%A6%E1%86%AB%E1%84%89%E1%85%B5%E1%84%90%E1%85%B5%20%E1%84%8B%E1%85%B1%E1%84%89%E1%85%B5%20'COLOR'%20MV%20-%20SMTOWN%20(360p%2C%20h264).mp4" type="video/mp4">
+            您的浏览器不支持 HTML5 视频播放。
+        </video>
+    </div>
+    
     <!-- MP3 播放器主体 -->
     <div class="mp3-player">
         <!-- Y2K 装饰 -->
@@ -339,6 +372,8 @@
         
         <!-- 屏幕区域 -->
         <div class="screen">
+            
+            <!-- 歌曲列表区域 (默认显示) -->
             <div class="input-area" id="inputArea">
                 <div class="input-wrapper">
                     <input type="text" id="song1" class="song-input" placeholder="输入 nctwish 的 color" value="nctwish的color" data-url="https://raw.githubusercontent.com/swinnie259-art/demo/main/NCT-WISH---COLOR-Bazeafrika.com.mp3">
@@ -362,7 +397,8 @@
         </div>
 
         <div class="controls">
-            <button class="pixel-button" id="backButton">主屏幕</button>
+            <!-- 仅保留音乐播放控制相关的按钮 -->
+            <button class="pixel-button" id="backButton">返回歌曲列表</button> 
             <button class="pixel-button" id="playButton">▶ 播放</button>
             <button class="pixel-button" id="nextButton">▶▶ 下一首</button>
         </div>
@@ -376,6 +412,8 @@
             const playButton = document.getElementById('playButton');
             const nextButton = document.getElementById('nextButton');
             const backButton = document.getElementById('backButton'); 
+            
+            // Audio Player elements
             const audioPlayer = document.getElementById('audioPlayer');
             const inputArea = document.getElementById('inputArea');
             const playbackAnimation = document.getElementById('playbackAnimation');
@@ -386,7 +424,11 @@
                 document.getElementById('song3')
             ];
             
-            // --- 成员数据 (已更新：Sion 描述已修改，去除定位) ---
+            // 外部 MV 播放器 - 用于在播放音乐时暂停它
+            const externalMvPlayer = document.getElementById('externalMvPlayer');
+
+
+            // --- 成员数据 (Sion 描述已更新，去除定位) ---
             const members = {
                 sion: {
                     korean: "시온 (SION)",
@@ -465,8 +507,8 @@
 
 
             let currentSongIndex = 0;
-            let isPlaying = false;
-
+            let isPlaying = false; // Tracks audio playing state
+            
             // 获取更新后的歌曲列表 (依赖于输入框的 data-url)
             function getUpdatedSongList() {
                 return songInputs.map(input => ({
@@ -474,17 +516,31 @@
                     url: input.dataset.url 
                 }));
             }
-
-            // 播放函数
+            
+            // --- 状态切换函数 ---
+            function showInputArea() {
+                inputArea.style.display = 'block';
+                playbackAnimation.style.display = 'none';
+            }
+            
+            function showPlaybackAnimation() {
+                 inputArea.style.display = 'none';
+                 playbackAnimation.style.display = 'flex';
+            }
+            
+            // 播放音频函数
             function playSong(startFromCurrent = false) {
+                showPlaybackAnimation(); // 切换到播放动画界面
+                
+                // 确保外部 MV 暂停，避免声音干扰
+                externalMvPlayer.pause();
+                
                 const list = getUpdatedSongList();
-                // 检查播放列表是否为空
                 if (list.length === 0) {
                     playingInfo.textContent = '错误：歌曲列表为空。';
                     return;
                 }
 
-                // 循环逻辑: 播放完最后一首后回到第一首
                 if (!startFromCurrent) {
                     if (currentSongIndex >= list.length) {
                         currentSongIndex = 0;
@@ -493,80 +549,68 @@
                     }
                 }
 
-
                 const song = list[currentSongIndex];
                 
-                // 设置音频源并尝试播放
                 audioPlayer.src = song.url;
-                audioPlayer.load(); // 强制加载新源
+                audioPlayer.load(); 
                 
                 audioPlayer.play()
                     .then(() => {
-                        // 播放成功
                         isPlaying = true;
                         playButton.textContent = '⏸ 暂停';
-                        inputArea.style.display = 'none';
-                        playbackAnimation.style.display = 'flex';
                         playingInfo.textContent = `播放中: ${song.name.toUpperCase()}`;
                     })
                     .catch(error => {
-                        // 播放失败 (如用户未交互、URL错误等)
                         console.error("音频播放失败:", error);
                         playingInfo.textContent = `加载失败: ${song.name.toUpperCase()}`;
                         
-                        // 播放失败后，如果是在自动连续播放或按 Next，则尝试下一首
                         if (isPlaying || !startFromCurrent) {
                             currentSongIndex++;
-                            setTimeout(playSong, 1000); // 延迟1秒尝试下一首
+                            setTimeout(playSong, 1000); 
                         } else {
-                            // 如果是用户点击 Play 失败，则停留在当前状态
                             playButton.textContent = '▶ 播放';
                             isPlaying = false;
+                            showInputArea(); // 播放失败返回列表
                         }
                     });
             }
             
-            // 返回主屏幕函数
+            // 返回歌曲列表函数 (主屏幕)
             function returnToHomeScreen() {
                 audioPlayer.pause();
-                audioPlayer.currentTime = 0; // 重置时间
+                externalMvPlayer.pause(); // 确保外部 MV 也暂停
+                
+                audioPlayer.currentTime = 0; 
                 isPlaying = false;
                 
                 playButton.textContent = '▶ 播放';
-                currentSongIndex = 0; // 重置索引
+                currentSongIndex = 0; 
                 
-                // 切换屏幕显示
-                inputArea.style.display = 'block';
-                playbackAnimation.style.display = 'none';
+                showInputArea();
                 playingInfo.textContent = '欢迎回来！';
             }
 
-            // 播放按钮点击事件
+            // --- 事件监听器 ---
+
+            // 播放按钮点击事件 (控制 Audio Player)
             playButton.addEventListener('click', () => {
+                // 暂停外部 MV
+                externalMvPlayer.pause();
+
                 if (!isPlaying) {
-                    // 暂停/停止状态 -> 播放
                     if (audioPlayer.paused && audioPlayer.src && audioPlayer.currentTime > 0) {
-                        // 继续播放
                         audioPlayer.play()
                             .then(() => {
                                 isPlaying = true;
                                 playButton.textContent = '⏸ 暂停';
-                                inputArea.style.display = 'none';
-                                playbackAnimation.style.display = 'flex';
-                                playingInfo.textContent = `播放中: ${getUpdatedSongList()[currentSongIndex].name.toUpperCase()}`;
+                                showPlaybackAnimation();
                             })
-                            .catch(error => {
-                                console.error("恢复播放失败:", error);
-                                // 恢复失败，从当前索引重新开始播放
-                                playSong(true); 
-                            });
+                            .catch(error => { console.error("恢复播放失败:", error); playSong(true); });
                     } else {
-                        // 从头开始播放列表
                         currentSongIndex = 0;
                         playSong();
                     }
                 } else {
-                    // 播放状态 -> 暂停
                     audioPlayer.pause();
                     playButton.textContent = '▶ 播放';
                     isPlaying = false;
@@ -575,15 +619,16 @@
 
             // 下一首按钮点击事件
             nextButton.addEventListener('click', () => {
-                currentSongIndex++; // 索引移至下一首
-                audioPlayer.pause(); // 暂停当前播放
-                playSong(); // 播放下一首
+                // 暂停外部 MV
+                externalMvPlayer.pause();
+                currentSongIndex++; 
+                audioPlayer.pause(); 
+                playSong(); 
             });
 
-            // 返回主屏幕按钮点击事件
+            // 返回歌曲列表/主屏幕按钮点击事件
             backButton.addEventListener('click', returnToHomeScreen);
-
-
+            
             // 监听音频结束事件，自动播放下一首
             audioPlayer.addEventListener('ended', () => {
                 currentSongIndex++;
